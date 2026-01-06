@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Users, BarChart3, Upload, Clock, Brain, MessageSquare, FileStack, UserCheck, Play, Pause, SkipForward, SkipBack, X } from 'lucide-react';
 
-const FlowchartNode = ({ title, icon: Icon, x, y, isHighlighted, onHover, onLeave, delay = 0, category }) => {
+const FlowchartNode = ({ title, icon: Icon, x, y, isHighlighted, onHover, onLeave, onClick, delay = 0, category }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -64,7 +64,9 @@ const FlowchartNode = ({ title, icon: Icon, x, y, isHighlighted, onHover, onLeav
       style={nodeStyle}
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
+      onClick={onClick}
     >
+
       {isHighlighted && (
         <div style={{
           position: 'absolute',
@@ -100,7 +102,7 @@ const Arrow = ({ x1, y1, x2, y2, isHighlighted, delay = 0 }) => {
     transformOrigin: '0 0',
     transition: 'all 0.3s ease',
   };
-
+  
   const lineStyle = {
     position: 'relative',
     height: '3px',
@@ -270,6 +272,54 @@ export default function RecruitmentPipeline() {
     return highlightedNodes.includes(from) && highlightedNodes.includes(to);
   };
 
+  const nodeSpecs = {
+  "Parsed Result": {
+  title: "Resume Parsing Engine",
+  model: "llama-3.1-8b-instant",
+  file: "services/resume_parser.py",
+  description: 
+    "This module converts unstructured resume documents into structured machine-readable data. The resume text is first extracted using document parsers and then processed using NLP-based information extraction techniques to identify key entities such as skills, education, work experience, certifications, and contact details.",
+  tokens: {
+    input: "1500–3000",
+    output: "300–600",
+    total: "~3600"
+  },
+  reason: 
+    "The parsing task primarily involves Named Entity Recognition (NER), pattern-based extraction, and semantic chunking rather than deep reasoning. Compared to larger models (70B), llama-3.1-8b-instant, A lightweight parameter model, provides high accuracy with low latency and cost, making it optimal for high-volume resume ingestion."
+},
+
+  "AI Insights": {
+  title: "AI Resume Intelligence & Insights Engine",
+  model: "llama-3.3-70b-versatile",
+  file: "services/ai_insights.py",
+  description: 
+    "This component performs deep semantic analysis on the parsed resume data to generate intelligent insights. It evaluates skill relevance, experience depth, role suitability, and identifies gaps by comparing the candidate profile against industry expectations and job role patterns.",
+  tokens: {
+    input: "800–1200",
+    output: "700–1000",
+    total: "~2200"
+  },
+  reason: 
+    "Smaller models (8B–13B) were evaluated but showed limited capability in multi-dimensional reasoning such as skill-gap analysis and contextual career guidance. The 70B model provides superior semantic understanding, better long-context handling, and more accurate recommendations, making it suitable for insight generation where reasoning quality is critical."
+},
+
+  "Chatbot": {
+  title: "Recruiter Conversational AI Assistant",
+  model: "llama-3.3-70b-versatile",
+  file: "routes/recruiter/chatbot.py",
+  description: 
+    "The chatbot enables recruiters to interact with the candidate database using natural language queries. User queries are interpreted using intent classification and entity extraction, mapped to structured database filters, and the retrieved results are summarized back into human-readable responses.",
+  tokens: {
+    input: "50–100",
+    output: "300–600",
+    total: "~1600"
+  },
+  reason: 
+    "Compared to rule-based systems or smaller language models, the 70B model demonstrates higher accuracy in understanding ambiguous recruiter queries and multi-constraint searches. Its strong conversational and reasoning capabilities reduce query reformulation and improve recruiter experience."
+}
+};
+
+
   const nodes = [
     { id: 'Profile', title: 'Profile', icon: User, x: 50, y: 30, delay: 0, category: 'candidate' },
     { id: 'Dashboard', title: 'Dashboard', icon: BarChart3, x: 50, y: 140, delay: 0.1, category: 'candidate' },
@@ -302,6 +352,8 @@ export default function RecruitmentPipeline() {
     { from: 'Candidates', to: 'Chatbot', x1: 750, y1: 300, x2: 750, y2: 400, delay: 0.8 },
     { from: 'Bulk Upload', to: 'Bulk Results', x1: 960, y1: 300, x2: 960, y2: 400, delay: 0.8 },
   ];
+
+  const [activeNode, setActiveNode] = useState(null);
 
   const buttonStyle = {
     background: 'rgba(59, 130, 246, 0.9)',
@@ -525,6 +577,54 @@ export default function RecruitmentPipeline() {
   </div>
 )}
 
+{activeNode && nodeSpecs[activeNode] && (
+  <div style={{
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.6)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 200
+  }}>
+    <div style={{
+      background: '#111827',
+      padding: '24px',
+      borderRadius: '16px',
+      width: '500px',
+      border: '1px solid #374151'
+    }}>
+      <h2 style={{ color: '#60a5fa' }}>
+        {nodeSpecs[activeNode].title}
+      </h2>
+
+      <p style={{ color: '#ffffff', lineHeight: '1.6' }}>
+        {nodeSpecs[activeNode].description}
+      </p>
+
+      <p style={{ color: '#ffffff'}}><b>Model:</b> {nodeSpecs[activeNode].model}</p>
+
+      <p style={{ color: '#ffffff'}}><b>Token Usage:</b></p>
+      <ul style={{ color: '#ffffff' }}>
+        <li>Input: {nodeSpecs[activeNode].tokens.input}</li>
+        <li>Output: {nodeSpecs[activeNode].tokens.output}</li>
+        <li>Total: {nodeSpecs[activeNode].tokens.total}</li>
+      </ul>
+
+      <p style={{ color: '#ffffff', lineHeight: '1.6' }}>
+        <b>Why this model?</b><br/>
+        {nodeSpecs[activeNode].reason}
+      </p>
+
+      <button
+        onClick={() => setActiveNode(null)}
+        style={{ marginTop: '12px' }}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
         
         {showInfo && !presentationMode && (
           <div style={{
@@ -612,6 +712,7 @@ export default function RecruitmentPipeline() {
             isHighlighted={highlightedNodes.includes(node.id)}
             onHover={() => !presentationMode && setHoveredNode(node.id)}
             onLeave={() => !presentationMode && setHoveredNode(null)}
+            onClick={() => setActiveNode(node.id)}
           />
         ))}
       </div>
